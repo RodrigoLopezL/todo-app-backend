@@ -1,0 +1,105 @@
+package com.encora.todolist_app.models;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+public class Task {
+    private int id;
+    private String text;
+    private LocalDateTime creationDate;
+    private LocalDateTime dueDate;
+    private Duration timeFrame;
+    private Priority priority;
+    private boolean done;
+
+    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, boolean done) {
+    this.id = id;
+    this.text = text;
+    this.creationDate = creationDate;
+    this.dueDate = dueDate;
+    this.priority = priority;
+    this.done = done;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public LocalDateTime getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public LocalDateTime getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(LocalDateTime dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public Duration getTimeFrame() {
+        return timeFrame;
+    }
+
+    public void setTimeFrame(Duration timeFrame) {
+        this.timeFrame = timeFrame;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
+    }
+
+    public boolean isDone() {
+        return done;
+    }
+
+    public void setDone(boolean done) {
+        this.done = done;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return getId() == task.getId() && isDone() == task.isDone() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId(), getText(), getCreationDate(), getDueDate(), getTimeFrame(), getPriority(), isDone());
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", text='" + text + '\'' +
+                ", creationDate=" + creationDate +
+                ", dueDate=" + dueDate +
+                ", timeFrame=" + timeFrame +
+                ", priority=" + priority +
+                ", done=" + done +
+                '}';
+    }
+}
