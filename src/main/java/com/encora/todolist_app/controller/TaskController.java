@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 public class TaskController {
 
     private final TaskService taskService = new TaskService();
@@ -62,12 +63,12 @@ public class TaskController {
         return taskService.addTask(task);
     }
 
-    @PostMapping("/todos/{id}/done")
+    @PatchMapping("/todos/{id}/done")
     Task updateStatusDoneTask(@PathVariable int id){
         return taskService.updateStatusDoneTask(id);
     }
 
-    @PutMapping("todos/{id}/undone")
+    @PatchMapping("todos/{id}/undone")
     Task updateStatusTask(@PathVariable int id){
         return taskService.updateStatusUndoneTask(id);
     }

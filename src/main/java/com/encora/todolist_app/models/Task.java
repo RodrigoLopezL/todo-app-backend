@@ -11,15 +11,15 @@ public class Task {
     private LocalDateTime dueDate;
     private Duration timeFrame;
     private Priority priority;
-    private boolean done;
+    private boolean state;
 
-    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, boolean done) {
+    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, boolean state) {
     this.id = id;
     this.text = text;
     this.creationDate = creationDate;
     this.dueDate = dueDate;
     this.priority = priority;
-    this.done = done;
+    this.state = state;
     }
 
     public int getId() {
@@ -70,24 +70,24 @@ public class Task {
         this.priority = priority;
     }
 
-    public boolean isDone() {
-        return done;
+    public boolean isState() {
+        return state;
     }
 
-    public void setDone(boolean done) {
-        this.done = done;
+    public void setState(boolean state) {
+        this.state = state;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return getId() == task.getId() && isDone() == task.isDone() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
+        return getId() == task.getId() && isState() == task.isState() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getText(), getCreationDate(), getDueDate(), getTimeFrame(), getPriority(), isDone());
+        return Objects.hash(getId(), getText(), getCreationDate(), getDueDate(), getTimeFrame(), getPriority(), isState());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class Task {
                 ", dueDate=" + dueDate +
                 ", timeFrame=" + timeFrame +
                 ", priority=" + priority +
-                ", done=" + done +
+                ", done=" + state +
                 '}';
     }
 }

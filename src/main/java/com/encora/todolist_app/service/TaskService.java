@@ -50,7 +50,7 @@ public class TaskService {
 
     public List<Task> filterTaskByStatus(boolean status){
         return taskList.stream()
-                .filter(task -> task.isDone() == status)
+                .filter(task -> task.isState() == status)
                 .collect(Collectors.toList());
     }
 
@@ -80,12 +80,12 @@ public class TaskService {
 
     public Task updateStatusDoneTask(int id){
         Task task = taskList.get(id);
-        task.setDone(true);
+        task.setState(true);
         return task;
     }
     public Task updateStatusUndoneTask(int id){
         Task task = taskList.get(id);
-        task.setDone(false);
+        task.setState(false);
         return task;
     }
 

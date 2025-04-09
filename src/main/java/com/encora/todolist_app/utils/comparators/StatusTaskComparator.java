@@ -9,6 +9,6 @@ public class StatusTaskComparator implements Comparator<Task> {
     public int compare(Task t1, Task t2) {
         //This compare is made for show first the undone task
         //inverting the parameters of method compare will result show first the done task
-        return Boolean.compare(t2.isDone(),t1.isDone());
+        return Boolean.compare(t2.isState(),t1.isState());
     }
 }
