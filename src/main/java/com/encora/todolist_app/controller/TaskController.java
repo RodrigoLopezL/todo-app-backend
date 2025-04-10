@@ -1,6 +1,7 @@
 package com.encora.todolist_app.controller;
 
 import com.encora.todolist_app.models.Priority;
+import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
 import com.encora.todolist_app.service.TaskService;
 import org.springframework.http.ResponseEntity;
@@ -27,18 +28,12 @@ public class TaskController {
         }
         return switch (action) {
 
-            case SortPriority -> {
-                taskService.sortTaskByPriority();
-                yield taskService.getAllTasks();
-            }
-            case SortDueDate -> {
-                taskService.sortTaskByDueDate();
-                yield taskService.getAllTasks();
-            }
-            case SortPriorityDueDate -> {
-                taskService.sortTaskByUrgency();
-                yield taskService.getAllTasks();
-            }
+            case SortPriority -> taskService.sortTaskByPriority();
+
+            case SortDueDate -> taskService.sortTaskByDueDate();
+
+
+            case SortPriorityDueDate -> taskService.sortTaskByUrgency();
 
             case FilterStatus -> taskService.filterTaskByStatus(status);
 
@@ -64,12 +59,14 @@ public class TaskController {
     }
 
     @PatchMapping("/todos/{id}/done")
-    Task updateStatusDoneTask(@PathVariable int id){
+    @CrossOrigin(origins = "http://localhost:5173")
+    StateTaskDTO updateStatusDoneTask(@PathVariable int id){
         return taskService.updateStatusDoneTask(id);
     }
 
     @PatchMapping("todos/{id}/undone")
-    Task updateStatusTask(@PathVariable int id){
+    @CrossOrigin(origins = "http://localhost:5173")
+    StateTaskDTO updateStatusTask(@PathVariable int id){
         return taskService.updateStatusUndoneTask(id);
     }
 
