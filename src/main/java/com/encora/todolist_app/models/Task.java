@@ -9,14 +9,14 @@ public class Task {
     private String text;
     private LocalDateTime creationDate;
     private LocalDateTime dueDate;
+    private LocalDateTime doneDate;
     private Duration timeFrame;
     private Priority priority;
     private boolean state;
 
-    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, boolean state) {
+    public Task(int id, String text, LocalDateTime dueDate, Priority priority, boolean state) {
     this.id = id;
     this.text = text;
-    this.creationDate = creationDate;
     this.dueDate = dueDate;
     this.priority = priority;
     this.state = state;
@@ -53,6 +53,10 @@ public class Task {
     public void setDueDate(LocalDateTime dueDate) {
         this.dueDate = dueDate;
     }
+
+    public LocalDateTime getDoneDate() { return doneDate; }
+
+    public void setDoneDate(LocalDateTime doneDate) { this.doneDate = doneDate; }
 
     public Duration getTimeFrame() {
         return timeFrame;

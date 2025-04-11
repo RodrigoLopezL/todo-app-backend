@@ -32,7 +32,6 @@ public class TaskController {
 
             case SortDueDate -> taskService.sortTaskByDueDate();
 
-
             case SortPriorityDueDate -> taskService.sortTaskByUrgency();
 
             case FilterStatus -> taskService.filterTaskByStatus(status);

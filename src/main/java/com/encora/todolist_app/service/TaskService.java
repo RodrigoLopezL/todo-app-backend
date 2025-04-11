@@ -23,11 +23,11 @@ public class TaskService {
     int id = 0;
 
     public TaskService() {
-        addTask(new Task(0,"do math homework", LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0), LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.MEDIUM,false));
-        addTask(new Task(0,"do weekly essay",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 2, 0, 0, 0),Priority.HIGH,true));
-        addTask(new Task(0,"spark meet",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 3, 0, 0, 0),Priority.LOW,false));
-        addTask(new Task(0,"clean something",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.LOW,false));
-        addTask(new Task(0,"gym",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 9, 0, 0, 0),Priority.LOW,true));
+//        addTask(new Task(0,"do math homework", LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.MEDIUM,false));
+//        addTask(new Task(0,"do weekly essay",LocalDateTime.of(2025, Month.FEBRUARY, 2, 0, 0, 0),Priority.HIGH,true));
+//        addTask(new Task(0,"spark meet",LocalDateTime.of(2025, Month.FEBRUARY, 3, 0, 0, 0),Priority.LOW,false));
+//        addTask(new Task(0,"clean something",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.LOW,false));
+//        addTask(new Task(0,"gym",LocalDateTime.of(2025, Month.FEBRUARY, 9, 0, 0, 0),Priority.LOW,true));
     }
 
     public List<Task> getAllTasks(){
@@ -77,7 +77,7 @@ public class TaskService {
 
     public Task addTask(Task task){
         task.setId(id);
-        task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDueDate()));
+        task.setCreationDate(LocalDateTime.now());
         taskMap.put(id,task);
         id++;
         return task;
@@ -92,6 +92,8 @@ public class TaskService {
         Task task = taskMap.get(id);
         if(task != null){
             task.setState(true);
+            task.setDoneDate(LocalDateTime.now());
+            task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDoneDate()));
             taskMap.replace(id,task);
             return new StateTaskDTO(task.getId(),task.isState());
         }
@@ -101,6 +103,8 @@ public class TaskService {
         Task task = taskMap.get(id);
         if(task != null){
             task.setState(false);
+            task.setDoneDate(null);
+            task.setTimeFrame(null);
             taskMap.replace(id,task);
             return new StateTaskDTO(task.getId(),task.isState());
         }
@@ -113,28 +117,30 @@ public class TaskService {
 
     public Map<String,Duration> avgTimesAllTask(){
         Map<String,Duration> mapAvgTimes = new HashMap<>();
-         Duration avgTotalTime = Duration.ZERO;
-         Duration avgTimeLowP = Duration.ZERO;
-         Duration avgTimeMediumP = Duration.ZERO;
-         Duration avgTimeHighP = Duration.ZERO;
+        Duration avgTotalTime = Duration.ZERO;
+        Duration avgTimeLowP = Duration.ZERO;
+        Duration avgTimeMediumP = Duration.ZERO;
+        Duration avgTimeHighP = Duration.ZERO;
 
         int totalTask= taskMap.size();
         int amountLowTask = 0;
         int amountMediumTask = 0;
-        int amountHighTask = 0;
+        int amountHighTask=0;
 
         for (Map.Entry<Integer, Task> entry : taskMap.entrySet()) {
             Task task = entry.getValue();
-            avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
-            if(task.getPriority() == Priority.LOW){
-                avgTimeLowP = avgTimeLowP.plus(task.getTimeFrame());
-                amountLowTask++;
-            } else if (task.getPriority() == Priority.MEDIUM) {
-                avgTimeMediumP = avgTimeMediumP.plus(task.getTimeFrame());
-                amountMediumTask++;
-            }else{
-               avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
-               amountHighTask++;
+            if (task.isState()){
+                avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
+                if(task.getPriority() == Priority.LOW){
+                    avgTimeLowP = avgTimeLowP.plus(task.getTimeFrame());
+                    amountLowTask++;
+                } else if (task.getPriority() == Priority.MEDIUM) {
+                    avgTimeMediumP = avgTimeMediumP.plus(task.getTimeFrame());
+                    amountMediumTask++;
+                }else{
+                   avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
+                   amountHighTask++;
+                }
             }
         }
 
