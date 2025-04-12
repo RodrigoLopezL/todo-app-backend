@@ -9,6 +9,6 @@ public class PriorityTaskComparator implements Comparator<Task> {
     @Override
     public int compare(Task t1, Task t2) {
         //compare to know which is most important
-        return t2.getPriority().compareTo(t1.getPriority());
+        return t1.getPriority().compareTo(t2.getPriority());
     }
 }

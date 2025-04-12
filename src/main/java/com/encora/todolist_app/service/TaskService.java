@@ -3,76 +3,123 @@ package com.encora.todolist_app.service;
 import com.encora.todolist_app.models.Priority;
 import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
-import com.encora.todolist_app.utils.comparators.DueDateTaskComparator;
 import com.encora.todolist_app.utils.comparators.PriorityTaskComparator;
 import com.encora.todolist_app.utils.comparators.UrgentTaskComparator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
 
-    private final Map<Integer,Task> taskMap = new HashMap<>();
+    Map<Integer,Task> taskMap = new HashMap<>();
 
     //quick solution id
     int id = 0;
 
     public TaskService() {
-//        addTask(new Task(0,"do math homework", LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.MEDIUM,false));
-//        addTask(new Task(0,"do weekly essay",LocalDateTime.of(2025, Month.FEBRUARY, 2, 0, 0, 0),Priority.HIGH,true));
-//        addTask(new Task(0,"spark meet",LocalDateTime.of(2025, Month.FEBRUARY, 3, 0, 0, 0),Priority.LOW,false));
-//        addTask(new Task(0,"clean something",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.LOW,false));
-//        addTask(new Task(0,"gym",LocalDateTime.of(2025, Month.FEBRUARY, 9, 0, 0, 0),Priority.LOW,true));
     }
 
-    public List<Task> getAllTasks(){
-        return new ArrayList<>(taskMap.values());
+    public void setTaskMap(Map<Integer,Task> map){
+        this.taskMap = map;
     }
 
-    public List<Task> sortTaskByDueDate(){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        taskList.sort(new DueDateTaskComparator());
-        return taskList;
+    public Map<Integer, Task> getTaskMap() {
+        return taskMap;
     }
 
-    public List<Task> sortTaskByPriority(){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        taskList.sort(new PriorityTaskComparator());
-        return taskList;
-
+    public int getId() {
+        return id;
     }
 
-    public List<Task> sortTaskByUrgency(){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        taskList.sort(new UrgentTaskComparator());
-        return taskList;
-
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public List<Task> filterTaskByStatus(boolean status){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        return taskList.stream()
-                .filter(task -> task.isState() == status)
-                .collect(Collectors.toList());
+    public Page<Task> getAllTasks(
+            @RequestParam(value = "state", required = false) Boolean state,
+            @RequestParam(value = "priority", required = false) String priority,
+            @RequestParam(value = "text", required = false) String text,
+            Pageable pageable
+    ){
+
+        List<Task> allTasksList = new ArrayList<>(taskMap.values());
+
+        if(state != null){
+            allTasksList = allTasksList.stream()
+                    .filter(task -> task.isState() == state)
+                    .collect(Collectors.toList());
+        }
+
+        if (StringUtils.hasText(priority)) {
+            try {
+                Priority searchPriority = Priority.valueOf(priority.toUpperCase());
+                allTasksList = allTasksList.stream()
+                        .filter(task -> task.getPriority() == searchPriority)
+                        .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                return Page.empty(); //
+            }
+        }
+
+        if (StringUtils.hasText(text)) {
+            allTasksList = allTasksList.stream()
+                    .filter(task -> task.getText().toLowerCase().contains(text.toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        int pageSize = pageable.getPageSize();
+        int currentPage = pageable.getPageNumber();
+        int start = currentPage * pageSize;
+
+        if (pageable.getSort().isSorted()) {
+            Comparator<Task> comparator = getTaskComparator(pageable);
+            if (comparator != null) {
+                allTasksList.sort(comparator);
+            }
+
+        }
+
+        List<Task> pagedTasks;
+        if (start >= allTasksList.size()) {
+            pagedTasks = new ArrayList<>(); // Page empty if home index is out of range
+        } else {
+            int end = Math.min(start + pageSize, allTasksList.size());
+            pagedTasks = allTasksList.subList(start, end);
+        }
+
+        return new PageImpl<>(pagedTasks, pageable, allTasksList.size());
     }
 
-    public List<Task> filterTaskByText(String text){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        return taskList.stream()
-                .filter(task -> task.getText().contains(text))
-                .collect(Collectors.toList());
-    }
-
-    public List<Task> filterTaskByPriority(Priority priority){
-        List<Task> taskList =  new ArrayList<>(taskMap.values());
-        return taskList.stream()
-                .filter(task -> task.getPriority().equals(priority))
-                .collect(Collectors.toList());
+    private static Comparator<Task> getTaskComparator(Pageable pageable) {
+        Comparator<Task> comparator = null;
+        for (Sort.Order order : pageable.getSort()){
+            Comparator<Task> currentComparator = switch (order.getProperty()) {
+                case "priority" -> Comparator.comparing(Task::getPriority);
+                case "dueDate" -> Comparator.comparing(Task::getDueDate,Comparator.nullsFirst(Comparator.naturalOrder()));
+                case "urgency" -> new UrgentTaskComparator();
+                default -> null;
+            };
+            if (currentComparator != null) {
+                if (order.getDirection() == Sort.Direction.DESC) {
+                    currentComparator = currentComparator.reversed();
+                }
+                if (comparator == null) {
+                    comparator = currentComparator;
+                } else {
+                    comparator = comparator.thenComparing(currentComparator);
+                }
+            }
+        }
+        return comparator;
     }
 
     public Task addTask(Task task){
@@ -116,13 +163,17 @@ public class TaskService {
     }
 
     public Map<String,Duration> avgTimesAllTask(){
+        if(taskMap.isEmpty()){
+            return null;
+        }
+
         Map<String,Duration> mapAvgTimes = new HashMap<>();
         Duration avgTotalTime = Duration.ZERO;
         Duration avgTimeLowP = Duration.ZERO;
         Duration avgTimeMediumP = Duration.ZERO;
         Duration avgTimeHighP = Duration.ZERO;
 
-        int totalTask= taskMap.size();
+        int totalTask= 0;
         int amountLowTask = 0;
         int amountMediumTask = 0;
         int amountHighTask=0;
@@ -130,6 +181,7 @@ public class TaskService {
         for (Map.Entry<Integer, Task> entry : taskMap.entrySet()) {
             Task task = entry.getValue();
             if (task.isState()){
+                totalTask++;
                 avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
                 if(task.getPriority() == Priority.LOW){
                     avgTimeLowP = avgTimeLowP.plus(task.getTimeFrame());
@@ -144,15 +196,11 @@ public class TaskService {
             }
         }
 
-        mapAvgTimes.put("AvgTotalTime",totalTask != 0 ? avgTotalTime.dividedBy(totalTask) : Duration.ZERO);
+        mapAvgTimes.put("AvgTotalTime",totalTask != 0 ? avgTotalTime.dividedBy(totalTask): Duration.ZERO);
         mapAvgTimes.put("avgTimeLowPriority",amountLowTask != 0 ? avgTimeLowP.dividedBy(amountLowTask): Duration.ZERO);
         mapAvgTimes.put("avgTimeMediumPriority",amountMediumTask != 0? avgTimeMediumP.dividedBy(amountMediumTask): Duration.ZERO);
         mapAvgTimes.put("avgTimeHighPriority",amountHighTask != 0? avgTimeHighP.dividedBy(amountHighTask): Duration.ZERO);
 
         return mapAvgTimes;
     }
-
-
-
-
 }

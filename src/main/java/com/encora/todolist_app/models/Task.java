@@ -1,9 +1,12 @@
 package com.encora.todolist_app.models;
 
+import jakarta.persistence.Entity;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Entity
 public class Task {
     private int id;
     private String text;
@@ -14,12 +17,25 @@ public class Task {
     private Priority priority;
     private boolean state;
 
-    public Task(int id, String text, LocalDateTime dueDate, Priority priority, boolean state) {
-    this.id = id;
+    public Task() {
+    }
+
+    public Task(String text, LocalDateTime dueDate, Priority priority) {
     this.text = text;
     this.dueDate = dueDate;
     this.priority = priority;
-    this.state = state;
+    this.setState(false);
+    }
+
+    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, LocalDateTime doneDate, Duration timeFrame, Priority priority, boolean state) {
+        this.id = id;
+        this.text = text;
+        this.creationDate = creationDate;
+        this.dueDate = dueDate;
+        this.doneDate = doneDate;
+        this.timeFrame = timeFrame;
+        this.priority = priority;
+        this.state = state;
     }
 
     public int getId() {
