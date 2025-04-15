@@ -1,9 +1,9 @@
 package com.encora.todolist_app.controller;
 
-import com.encora.todolist_app.models.Priority;
 import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
 import com.encora.todolist_app.service.TaskService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -13,13 +13,20 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.Map;
 
+
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 public class TaskController {
 
-    private final TaskService taskService = new TaskService();
+    private final TaskService taskService;
+
+    @Autowired
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
+    }
 
     @GetMapping("/todos")
+    @CrossOrigin(origins = "http://localhost:5173")
     public ResponseEntity<Page<Task>> allTasks(
             @RequestParam(value = "state", required = false) Boolean state,
             @RequestParam(value = "priority", required = false) String priority,
@@ -33,15 +40,20 @@ public class TaskController {
     public ResponseEntity<Map<String, Duration>> timeTask() {
         Map<String, Duration> avgTimes = taskService.avgTimesAllTask();
         if (avgTimes == null || avgTimes.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // O HttpStatus.OK con un body indicando la ausencia de datos
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(avgTimes, HttpStatus.OK);
     }
 
     @PostMapping("/todos")
+    @CrossOrigin(origins = "http://localhost:5173")
     public ResponseEntity<Task> insertTask(@RequestBody Task task) {
         Task insertedTask = taskService.addTask(task);
-        return new ResponseEntity<>(insertedTask, HttpStatus.CREATED); // Código 201 para indicar que se creó un recurso
+        if (insertedTask != null) {
+            return new ResponseEntity<>(insertedTask, HttpStatus.CREATED);
+        }else {
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+        }
     }
 
     @PatchMapping("/todos/{id}/done")
@@ -51,7 +63,7 @@ public class TaskController {
         if (updatedState != null) {
             return new ResponseEntity<>(updatedState, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404 si la tarea no se encuentra
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -62,9 +74,10 @@ public class TaskController {
         if (updatedState != null) {
             return new ResponseEntity<>(updatedState, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404 si la tarea no se encuentra
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
 
     @PutMapping("/todos/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable int id, @RequestBody Task task) {
@@ -72,14 +85,14 @@ public class TaskController {
         if (updatedTask != null) {
             return new ResponseEntity<>(updatedTask, HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Código 404 si la tarea no se encuentra
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/todos/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable int id) {
         taskService.deleteTask(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Ya estabas devolviendo ResponseEntity<Void> con noContent
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
 

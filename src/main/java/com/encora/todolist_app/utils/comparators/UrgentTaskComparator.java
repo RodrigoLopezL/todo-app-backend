@@ -7,12 +7,12 @@ import java.util.Comparator;
 public class UrgentTaskComparator implements Comparator<Task> {
     @Override
     public int compare(Task t1, Task t2) {
-        if(t1.getDueDate()!=null || t2.getDueDate() != null) {
+        if(t1.getDueDate() != null && t2.getDueDate() != null) {
             int dateSoon = t1.getDueDate().compareTo(t2.getDueDate());
             if (dateSoon != 0) {
                 return dateSoon;
             }
         }
-        return t2.getPriority().compareTo(t1.getPriority());
+        return t1.getPriority().compareTo(t2.getPriority());
     }
 }

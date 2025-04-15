@@ -3,167 +3,53 @@ package com.encora.todolist_app.service;
 import com.encora.todolist_app.models.Priority;
 import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
-import com.encora.todolist_app.utils.comparators.PriorityTaskComparator;
-import com.encora.todolist_app.utils.comparators.UrgentTaskComparator;
+import com.encora.todolist_app.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class TaskService {
 
-    Map<Integer,Task> taskMap = new HashMap<>();
+    private final TaskRepository taskRepository;
 
-    //quick solution id
-    int id = 0;
-
-    public TaskService() {
+    @Autowired
+    public TaskService(TaskRepository taskRepository) {
+        this.taskRepository = taskRepository;
     }
 
-    public void setTaskMap(Map<Integer,Task> map){
-        this.taskMap = map;
+    public Page<Task> getAllTasks(Boolean state, String priority, String text, Pageable pageable) {
+        return taskRepository.findAllByStateAndPriorityAndText(state, priority, text, pageable);
     }
 
-    public Map<Integer, Task> getTaskMap() {
-        return taskMap;
+    public Task addTask(Task task) {
+        return taskRepository.save(task);
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public Page<Task> getAllTasks(
-            @RequestParam(value = "state", required = false) Boolean state,
-            @RequestParam(value = "priority", required = false) String priority,
-            @RequestParam(value = "text", required = false) String text,
-            Pageable pageable
-    ){
-
-        List<Task> allTasksList = new ArrayList<>(taskMap.values());
-
-        if(state != null){
-            allTasksList = allTasksList.stream()
-                    .filter(task -> task.isState() == state)
-                    .collect(Collectors.toList());
+    public Task updateTask(Integer id, Task task) {
+        if (taskRepository.findById(id).isPresent()) {
+            task.setId(id);
+            return taskRepository.replaceTask(id,task);
         }
-
-        if (StringUtils.hasText(priority)) {
-            try {
-                Priority searchPriority = Priority.valueOf(priority.toUpperCase());
-                allTasksList = allTasksList.stream()
-                        .filter(task -> task.getPriority() == searchPriority)
-                        .collect(Collectors.toList());
-            } catch (IllegalArgumentException e) {
-                return Page.empty(); //
-            }
-        }
-
-        if (StringUtils.hasText(text)) {
-            allTasksList = allTasksList.stream()
-                    .filter(task -> task.getText().toLowerCase().contains(text.toLowerCase()))
-                    .collect(Collectors.toList());
-        }
-        int pageSize = pageable.getPageSize();
-        int currentPage = pageable.getPageNumber();
-        int start = currentPage * pageSize;
-
-        if (pageable.getSort().isSorted()) {
-            Comparator<Task> comparator = getTaskComparator(pageable);
-            if (comparator != null) {
-                allTasksList.sort(comparator);
-            }
-
-        }
-
-        List<Task> pagedTasks;
-        if (start >= allTasksList.size()) {
-            pagedTasks = new ArrayList<>(); // Page empty if home index is out of range
-        } else {
-            int end = Math.min(start + pageSize, allTasksList.size());
-            pagedTasks = allTasksList.subList(start, end);
-        }
-
-        return new PageImpl<>(pagedTasks, pageable, allTasksList.size());
+        return null; // Considera lanzar una excepción si no se encuentra
     }
 
-    private static Comparator<Task> getTaskComparator(Pageable pageable) {
-        Comparator<Task> comparator = null;
-        for (Sort.Order order : pageable.getSort()){
-            Comparator<Task> currentComparator = switch (order.getProperty()) {
-                case "priority" -> Comparator.comparing(Task::getPriority);
-                case "dueDate" -> Comparator.comparing(Task::getDueDate,Comparator.nullsFirst(Comparator.naturalOrder()));
-                case "urgency" -> new UrgentTaskComparator();
-                default -> null;
-            };
-            if (currentComparator != null) {
-                if (order.getDirection() == Sort.Direction.DESC) {
-                    currentComparator = currentComparator.reversed();
-                }
-                if (comparator == null) {
-                    comparator = currentComparator;
-                } else {
-                    comparator = comparator.thenComparing(currentComparator);
-                }
-            }
-        }
-        return comparator;
+    public void deleteTask(Integer id) {
+        taskRepository.deleteById(id);
     }
 
-    public Task addTask(Task task){
-        task.setId(id);
-        task.setCreationDate(LocalDateTime.now());
-        taskMap.put(id,task);
-        id++;
-        return task;
-    }
+    public Map<String, Duration> avgTimesAllTask() {
 
-    public  Task updateTask(int id,Task task){
-        taskMap.replace(id,task);
-        return task;
-    }
-
-    public StateTaskDTO updateStatusDoneTask(int id){
-        Task task = taskMap.get(id);
-        if(task != null){
-            task.setState(true);
-            task.setDoneDate(LocalDateTime.now());
-            task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDoneDate()));
-            taskMap.replace(id,task);
-            return new StateTaskDTO(task.getId(),task.isState());
-        }
-        return null;
-    }
-    public StateTaskDTO updateStatusUndoneTask(int id){
-        Task task = taskMap.get(id);
-        if(task != null){
-            task.setState(false);
-            task.setDoneDate(null);
-            task.setTimeFrame(null);
-            taskMap.replace(id,task);
-            return new StateTaskDTO(task.getId(),task.isState());
-        }
-        return null;
-    }
-
-    public void deleteTask(int id){
-        taskMap.remove(id);
-    }
-
-    public Map<String,Duration> avgTimesAllTask(){
-        if(taskMap.isEmpty()){
+        List<Task> allTasks = taskRepository.getAllTask();
+        if(allTasks.isEmpty()){
             return null;
         }
 
@@ -178,8 +64,7 @@ public class TaskService {
         int amountMediumTask = 0;
         int amountHighTask=0;
 
-        for (Map.Entry<Integer, Task> entry : taskMap.entrySet()) {
-            Task task = entry.getValue();
+        for (Task task:allTasks) {
             if (task.isState()){
                 totalTask++;
                 avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
@@ -190,10 +75,14 @@ public class TaskService {
                     avgTimeMediumP = avgTimeMediumP.plus(task.getTimeFrame());
                     amountMediumTask++;
                 }else{
-                   avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
-                   amountHighTask++;
+                    avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
+                    amountHighTask++;
                 }
             }
+        }
+
+        if(totalTask == 0){
+            return null;
         }
 
         mapAvgTimes.put("AvgTotalTime",totalTask != 0 ? avgTotalTime.dividedBy(totalTask): Duration.ZERO);
@@ -202,5 +91,31 @@ public class TaskService {
         mapAvgTimes.put("avgTimeHighPriority",amountHighTask != 0? avgTimeHighP.dividedBy(amountHighTask): Duration.ZERO);
 
         return mapAvgTimes;
+    }
+
+    public StateTaskDTO updateStatusDoneTask(int id) {
+        Optional<Task> taskOptional = taskRepository.findById(id);
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setState(true);
+            task.setDoneDate(LocalDateTime.now());
+            task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDoneDate()));
+            taskRepository.replaceTask(id,task);
+            return new StateTaskDTO(task.getId(), task.isState());
+        }
+        return null; // Considera lanzar una excepción si no se encuentra
+    }
+
+    public StateTaskDTO updateStatusUndoneTask(int id) {
+        Optional<Task> taskOptional = taskRepository.findById(id);
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setState(false);
+            task.setDoneDate(null);
+            task.setTimeFrame(null);
+            taskRepository.replaceTask(id,task);
+            return new StateTaskDTO(task.getId(), task.isState());
+        }
+        return null; // Considera lanzar una excepción si no se encuentra
     }
 }

@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @Entity
 public class Task {
-    private int id;
+    private Integer id;
     private String text;
     private LocalDateTime creationDate;
     private LocalDateTime dueDate;
@@ -27,7 +27,7 @@ public class Task {
     this.setState(false);
     }
 
-    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, LocalDateTime doneDate, Duration timeFrame, Priority priority, boolean state) {
+    public Task(Integer id, String text, LocalDateTime creationDate, LocalDateTime dueDate, LocalDateTime doneDate, Duration timeFrame, Priority priority, boolean state) {
         this.id = id;
         this.text = text;
         this.creationDate = creationDate;
@@ -38,11 +38,11 @@ public class Task {
         this.state = state;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 

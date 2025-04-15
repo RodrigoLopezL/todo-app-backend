@@ -5,169 +5,204 @@ import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
 import com.encora.todolist_app.service.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@WebMvcTest() // Enfoca la prueba solo en TaskController
+@WebMvcTest(TaskController.class)
 public class TaskControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Mock
+    @MockBean
     private TaskService taskService;
 
     @Autowired
-    private TaskController taskController;
+    private ObjectMapper objectMapper;
 
-    private Page<Task> defaultTaskListPage;
-    private Task task1;
-    private Task task2;
+    private final LocalDateTime now = LocalDateTime.now();
 
-    @BeforeEach
-    void setUP(){
-        // Crear tareas comunes para las pruebas
-        task1 = new Task(0, "Tarea Común 1", LocalDateTime.now(),null, null, null, Priority.MEDIUM, false);
-        task2 = new Task(1, "Tarea Común 2", LocalDateTime.now().plusHours(1),null, null, null, Priority.HIGH, true);
-        defaultTaskListPage = new PageImpl<>(Arrays.asList(task1, task2), PageRequest.of(0, 10), 2);
-
-        taskService.addTask(task1);
-        taskService.addTask(task2);
+    private Task createTask(Integer id, String text, Priority priority, boolean state) {
+        return new Task(id, text, now, null, null, null, priority, state);
     }
 
     @Test
     void allTasks_shouldReturnOkAndPageOfTasks() throws Exception {
-        // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
-        //Task task = new Task(0, "Tarea de prueba", LocalDateTime.now(),null, null, null, Priority.MEDIUM, false);
-        Page<Task> taskPage = new PageImpl<>(List.of(task1,task2), pageable, 1);
+        Task task1 = createTask(1, "Task 1", Priority.MEDIUM, false);
+        Task task2 = createTask(2, "Task 2", Priority.HIGH, true);
+        Page<Task> taskPage = new PageImpl<>(Arrays.asList(task1, task2), PageRequest.of(0, 10), 2);
 
-        when(taskService.getAllTasks(eq(null), eq(null), eq(null), eq(pageable))).thenReturn(taskPage);
+        when(taskService.getAllTasks(eq(false), eq("MEDIUM"), eq("Task"), any(Pageable.class))).thenReturn(taskPage);
 
-        // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/todos")
+                        .param("state", "false")
+                        .param("priority", "MEDIUM")
+                        .param("text", "Task")
                         .param("page", "0")
                         .param("size", "10"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.content.[0].id").value(0))
-                .andExpect(jsonPath("$.content.[0].text").value("Tarea de prueba"));
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id", is(1)))
+                .andExpect(jsonPath("$.content[0].text", is("Task 1")));
+        verify(taskService, times(1)).getAllTasks(eq(false), eq("MEDIUM"), eq("Task"), any(Pageable.class));
     }
 
     @Test
     void timeTask_shouldReturnOkAndMapOfDurations() throws Exception {
-        // Arrange
-        Map<String, Duration> timeMap = Map.of("AvgTotalTime", Duration.ofMinutes(30));
-        when(taskService.avgTimesAllTask()).thenReturn(timeMap);
+        Map<String, Duration> avgTimes = Map.of("AvgTotalTime", Duration.ofMinutes(30));
+        when(taskService.avgTimesAllTask()).thenReturn(avgTimes);
 
-        // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.get("/todos/time"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.AvgTotalTime").value(30));
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.AvgTotalTime", is("PT30M")));
+        verify(taskService, times(1)).avgTimesAllTask();
+    }
+
+    @Test
+    void timeTask_shouldReturnNoContentIfNoTimesAvailable() throws Exception {
+        when(taskService.avgTimesAllTask()).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/todos/time"))
+                .andExpect(status().isNoContent());
+        verify(taskService, times(1)).avgTimesAllTask();
+
+        when(taskService.avgTimesAllTask()).thenReturn(Collections.emptyMap());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/todos/time"))
+                .andExpect(status().isNoContent());
+        verify(taskService, times(2)).avgTimesAllTask();
     }
 
     @Test
     void insertTask_shouldReturnCreatedAndInsertedTask() throws Exception {
-        // Arrange
-        Task taskToInsert = new Task(1, "Nueva Tarea", LocalDateTime.now(),null, null, null, Priority.HIGH, false);
-        Task insertedTask = new Task(1, "Nueva Tarea", LocalDateTime.now(),null, null, null, Priority.HIGH, false);
-        when(taskService.addTask(any(Task.class))).thenReturn(insertedTask);
+        Task newTask = createTask(null, "New Task", Priority.LOW, false);
+        Task savedTask = createTask(3, "New Task", Priority.LOW, false);
+        when(taskService.addTask(any(Task.class))).thenReturn(savedTask);
 
-        // Act & Assert
         mockMvc.perform(MockMvcRequestBuilders.post("/todos")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(taskToInsert)))
-                .andExpect(MockMvcResultMatchers.status().isOk()) // Or isCreated (201) depending on your design
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.text").value("Nueva Tarea"));
+                        .content(objectMapper.writeValueAsString(newTask)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(3)))
+                .andExpect(jsonPath("$.text", is("New Task")));
+        verify(taskService, times(1)).addTask(any(Task.class));
+    }
+
+    @Test
+    void insertTask_shouldReturnNotAcceptableIfServiceReturnsNull() throws Exception {
+        Task newTask = createTask(null, "New Task", Priority.LOW, false);
+        when(taskService.addTask(any(Task.class))).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/todos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newTask)))
+                .andExpect(status().isNotAcceptable());
+        verify(taskService, times(1)).addTask(any(Task.class));
     }
 
     @Test
     void updateStatusDoneTask_shouldReturnOkAndUpdatedState() throws Exception {
-        // Arrange
-        int taskId = 1;
-        StateTaskDTO updatedState = new StateTaskDTO(taskId, true);
-        when(taskService.updateStatusDoneTask(taskId)).thenReturn(updatedState);
+        StateTaskDTO updatedState = new StateTaskDTO(1, true);
+        when(taskService.updateStatusDoneTask(1)).thenReturn(updatedState);
 
-        // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/{id}/done", taskId))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(taskId))
-                .andExpect(jsonPath("$.state").value(true));
+        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/1/done"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.status", is(true)));
+        verify(taskService, times(1)).updateStatusDoneTask(1);
+    }
+
+    @Test
+    void updateStatusDoneTask_shouldReturnNotFoundIfTaskNotFound() throws Exception {
+        when(taskService.updateStatusDoneTask(1)).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/1/done"))
+                .andExpect(status().isNotFound());
+        verify(taskService, times(1)).updateStatusDoneTask(1);
     }
 
     @Test
     void updateStatusTask_shouldReturnOkAndUpdatedState() throws Exception {
-        // Arrange
-        int taskId = 2;
-        StateTaskDTO updatedState = new StateTaskDTO(taskId, false);
-        when(taskService.updateStatusUndoneTask(taskId)).thenReturn(updatedState);
+        StateTaskDTO updatedState = new StateTaskDTO(2, false);
+        when(taskService.updateStatusUndoneTask(2)).thenReturn(updatedState);
 
-        // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/{id}/undone", taskId))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(taskId))
-                .andExpect(jsonPath("$.state").value(false));
+        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/2/undone"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(2)))
+                .andExpect(jsonPath("$.status", is(false)));
+        verify(taskService, times(1)).updateStatusUndoneTask(2);
+    }
+
+    @Test
+    void updateStatusTask_shouldReturnNotFoundIfTaskNotFound() throws Exception {
+        when(taskService.updateStatusUndoneTask(2)).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/todos/2/undone"))
+                .andExpect(status().isNotFound());
+        verify(taskService, times(1)).updateStatusUndoneTask(2);
     }
 
     @Test
     void updateTask_shouldReturnOkAndUpdatedTask() throws Exception {
-        // Arrange
-        int taskId = 3;
-        Task taskToUpdate = new Task(taskId, "Tarea Actualizada", LocalDateTime.now(),null, null, null, Priority.MEDIUM, true);
-        when(taskService.updateTask(eq(taskId), any(Task.class))).thenReturn(taskToUpdate);
+        Task updatedTask = createTask(1, "Updated Task", Priority.HIGH, true);
+        when(taskService.updateTask(eq(1), any(Task.class))).thenReturn(updatedTask);
 
-        // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.put("/todos/{id}", taskId)
+        mockMvc.perform(MockMvcRequestBuilders.put("/todos/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(taskToUpdate)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(taskId))
-                .andExpect(jsonPath("$.text").value("Tarea Actualizada"));
+                        .content(objectMapper.writeValueAsString(updatedTask)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.text", is("Updated Task")))
+                .andExpect(jsonPath("$.priority", is("HIGH")))
+                .andExpect(jsonPath("$.state", is(true)));
+        verify(taskService, times(1)).updateTask(eq(1), any(Task.class));
+    }
+
+    @Test
+    void updateTask_shouldReturnNotFoundIfTaskNotFound() throws Exception {
+        Task updatedTask = createTask(1, "Updated Task", Priority.HIGH, true);
+        when(taskService.updateTask(eq(1), any(Task.class))).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/todos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updatedTask)))
+                .andExpect(status().isNotFound());
+        verify(taskService, times(1)).updateTask(eq(1), any(Task.class));
     }
 
     @Test
     void deleteTask_shouldReturnNoContent() throws Exception {
-        // Arrange
-        int taskId = 4;
-        doNothing().when(taskService).deleteTask(taskId);
+        doNothing().when(taskService).deleteTask(1);
 
-        // Act & Assert
-        mockMvc.perform(MockMvcRequestBuilders.delete("/todos/{id}", taskId))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
-        verify(taskService, times(1)).deleteTask(taskId);
+        mockMvc.perform(MockMvcRequestBuilders.delete("/todos/1"))
+                .andExpect(status().isNoContent());
+        verify(taskService, times(1)).deleteTask(1);
     }
 }
