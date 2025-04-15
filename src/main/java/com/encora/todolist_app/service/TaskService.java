@@ -85,7 +85,7 @@ public class TaskService {
             return null;
         }
 
-        mapAvgTimes.put("AvgTotalTime",totalTask != 0 ? avgTotalTime.dividedBy(totalTask): Duration.ZERO);
+        mapAvgTimes.put("AvgTotalTime", avgTotalTime.dividedBy(totalTask));
         mapAvgTimes.put("avgTimeLowPriority",amountLowTask != 0 ? avgTimeLowP.dividedBy(amountLowTask): Duration.ZERO);
         mapAvgTimes.put("avgTimeMediumPriority",amountMediumTask != 0? avgTimeMediumP.dividedBy(amountMediumTask): Duration.ZERO);
         mapAvgTimes.put("avgTimeHighPriority",amountHighTask != 0? avgTimeHighP.dividedBy(amountHighTask): Duration.ZERO);

@@ -102,7 +102,7 @@ public class Task {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return getId() == task.getId() && isState() == task.isState() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
+        return Objects.equals(getId(), task.getId()) && isState() == task.isState() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
     }
 
     @Override
