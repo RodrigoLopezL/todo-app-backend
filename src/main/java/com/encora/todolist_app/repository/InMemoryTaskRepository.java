@@ -103,7 +103,7 @@ public class InMemoryTaskRepository implements TaskRepository {
         for (Sort.Order order : pageable.getSort()) {
             Comparator<Task> currentComparator = switch (order.getProperty()) {
                 case "priority" -> Comparator.comparing(Task::getPriority);
-                case "dueDate" -> Comparator.comparing(Task::getDueDate, Comparator.nullsFirst(Comparator.naturalOrder()));
+                case "dueDate" -> Comparator.comparing(Task::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()));
                 case "urgency" -> new UrgentTaskComparator();
                 default -> null;
             };

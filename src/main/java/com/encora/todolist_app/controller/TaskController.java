@@ -37,6 +37,7 @@ public class TaskController {
     }
 
     @GetMapping("/todos/time")
+    @CrossOrigin(origins = "http://localhost:5173")
     public ResponseEntity<Map<String, Duration>> timeTask() {
         Map<String, Duration> avgTimes = taskService.avgTimesAllTask();
         if (avgTimes == null || avgTimes.isEmpty()) {
@@ -80,6 +81,7 @@ public class TaskController {
 
 
     @PutMapping("/todos/{id}")
+    @CrossOrigin(origins = "http://localhost:5173")
     public ResponseEntity<Task> updateTask(@PathVariable int id, @RequestBody Task task) {
         Task updatedTask = taskService.updateTask(id, task);
         if (updatedTask != null) {
@@ -90,6 +92,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/todos/{id}")
+    @CrossOrigin(origins = "http://localhost:5173")
     public ResponseEntity<Void> deleteTask(@PathVariable int id) {
         taskService.deleteTask(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
