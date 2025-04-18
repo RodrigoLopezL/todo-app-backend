@@ -83,15 +83,17 @@ public class InMemoryTaskRepositoryTest {
     void findAll_withDueDateSorting_shouldReturnSortedTasks() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("dueDate"));
         Page<Task> sortedTasksPage = taskRepository.findAllByStateAndPriorityAndText(null,null,null,pageable);
-        assertNull(sortedTasksPage.getContent().get(0).getDueDate());
-        assertEquals(now.plusDays(1), sortedTasksPage.getContent().get(1).getDueDate());
-        assertEquals(now.plusDays(2), sortedTasksPage.getContent().get(2).getDueDate());
+
+        assertEquals(now.plusDays(1), sortedTasksPage.getContent().get(0).getDueDate());
+        assertEquals(now.plusDays(2), sortedTasksPage.getContent().get(1).getDueDate());
+        assertNull(sortedTasksPage.getContent().get(2).getDueDate());
 
         Pageable pageableDesc = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "dueDate"));
         Page<Task> sortedTasksPageDesc = taskRepository.findAll(pageableDesc);
-        assertEquals(now.plusDays(2), sortedTasksPageDesc.getContent().get(0).getDueDate());
-        assertEquals(now.plusDays(1), sortedTasksPageDesc.getContent().get(1).getDueDate());
-        assertNull(sortedTasksPageDesc.getContent().get(2).getDueDate());
+        assertNull(sortedTasksPageDesc.getContent().get(0).getDueDate());
+        assertEquals(now.plusDays(2), sortedTasksPageDesc.getContent().get(1).getDueDate());
+        assertEquals(now.plusDays(1), sortedTasksPageDesc.getContent().get(2).getDueDate());
+
     }
 
 
