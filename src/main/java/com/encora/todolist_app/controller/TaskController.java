@@ -15,7 +15,7 @@ import java.util.Map;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "http://localhost:8080")
 public class TaskController {
 
     private final TaskService taskService;
@@ -26,7 +26,7 @@ public class TaskController {
     }
 
     @GetMapping("/todos")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<Page<Task>> allTasks(
             @RequestParam(value = "state", required = false) Boolean state,
             @RequestParam(value = "priority", required = false) String priority,
@@ -37,7 +37,7 @@ public class TaskController {
     }
 
     @GetMapping("/todos/time")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<Map<String, Duration>> timeTask() {
         Map<String, Duration> avgTimes = taskService.avgTimesAllTask();
         if (avgTimes == null || avgTimes.isEmpty()) {
@@ -47,7 +47,7 @@ public class TaskController {
     }
 
     @PostMapping("/todos")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<Task> insertTask(@RequestBody Task task) {
         Task insertedTask = taskService.addTask(task);
         if (insertedTask != null) {
@@ -58,7 +58,7 @@ public class TaskController {
     }
 
     @PatchMapping("/todos/{id}/done")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<StateTaskDTO> updateStatusDoneTask(@PathVariable int id) {
         StateTaskDTO updatedState = taskService.updateStatusDoneTask(id);
         if (updatedState != null) {
@@ -69,7 +69,7 @@ public class TaskController {
     }
 
     @PatchMapping("todos/{id}/undone")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<StateTaskDTO> updateStatusTask(@PathVariable int id) {
         StateTaskDTO updatedState = taskService.updateStatusUndoneTask(id);
         if (updatedState != null) {
@@ -81,7 +81,7 @@ public class TaskController {
 
 
     @PutMapping("/todos/{id}")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<Task> updateTask(@PathVariable int id, @RequestBody Task task) {
         Task updatedTask = taskService.updateTask(id, task);
         if (updatedTask != null) {
@@ -92,7 +92,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/todos/{id}")
-    @CrossOrigin(origins = "http://localhost:5173")
+    @CrossOrigin(origins = "http://localhost:8080")
     public ResponseEntity<Void> deleteTask(@PathVariable int id) {
         taskService.deleteTask(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
