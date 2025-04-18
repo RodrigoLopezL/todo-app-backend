@@ -28,20 +28,20 @@ This is the backend for a Todo List application. It provides RESTful APIs for ma
 
 ### Running the Application
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/todo-app-backend.git
-   cd todo-app-backend
-   ```
-2. Build the project:
-   ```bash
-     ./mvnw clean install
-   ```
-3.Run the application:
+  1. Clone the repository:
   ```bash
-     ./mvnw spring-boot:run
-   ```
-4.The application will start on port 9090. You can access the APIs at http://localhost:9090.
+  git clone https://github.com/your-username/todo-app-backend.git
+  cd todo-app-backend
+  ```
+  2. Build the project:
+  ```bash
+  ./mvnw clean install
+  ```
+  3.Run the application:
+  ```bash
+   ./mvnw spring-boot:run
+  ```
+  4.The application will start on port 9090. You can access the APIs at http://localhost:9090.
 
 ## API Endpoints
 # Task Management
