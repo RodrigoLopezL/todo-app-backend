@@ -1,32 +1,48 @@
 package com.encora.todolist_app.models;
 
+import jakarta.persistence.Entity;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Entity
 public class Task {
-    private int id;
+    private Integer id;
     private String text;
     private LocalDateTime creationDate;
     private LocalDateTime dueDate;
+    private LocalDateTime doneDate;
     private Duration timeFrame;
     private Priority priority;
-    private boolean done;
+    private boolean state;
 
-    public Task(int id, String text, LocalDateTime creationDate, LocalDateTime dueDate, Priority priority, boolean done) {
-    this.id = id;
-    this.text = text;
-    this.creationDate = creationDate;
-    this.dueDate = dueDate;
-    this.priority = priority;
-    this.done = done;
+    public Task() {
     }
 
-    public int getId() {
+    public Task(String text, LocalDateTime dueDate, Priority priority) {
+    this.text = text;
+    this.dueDate = dueDate;
+    this.priority = priority;
+    this.setState(false);
+    }
+
+    public Task(Integer id, String text, LocalDateTime creationDate, LocalDateTime dueDate, LocalDateTime doneDate, Duration timeFrame, Priority priority, boolean state) {
+        this.id = id;
+        this.text = text;
+        this.creationDate = creationDate;
+        this.dueDate = dueDate;
+        this.doneDate = doneDate;
+        this.timeFrame = timeFrame;
+        this.priority = priority;
+        this.state = state;
+    }
+
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -54,6 +70,10 @@ public class Task {
         this.dueDate = dueDate;
     }
 
+    public LocalDateTime getDoneDate() { return doneDate; }
+
+    public void setDoneDate(LocalDateTime doneDate) { this.doneDate = doneDate; }
+
     public Duration getTimeFrame() {
         return timeFrame;
     }
@@ -70,24 +90,24 @@ public class Task {
         this.priority = priority;
     }
 
-    public boolean isDone() {
-        return done;
+    public boolean isState() {
+        return state;
     }
 
-    public void setDone(boolean done) {
-        this.done = done;
+    public void setState(boolean state) {
+        this.state = state;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return getId() == task.getId() && isDone() == task.isDone() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
+        return Objects.equals(getId(), task.getId()) && isState() == task.isState() && Objects.equals(getText(), task.getText()) && Objects.equals(getCreationDate(), task.getCreationDate()) && Objects.equals(getDueDate(), task.getDueDate()) && Objects.equals(getTimeFrame(), task.getTimeFrame()) && getPriority() == task.getPriority();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getText(), getCreationDate(), getDueDate(), getTimeFrame(), getPriority(), isDone());
+        return Objects.hash(getId(), getText(), getCreationDate(), getDueDate(), getTimeFrame(), getPriority(), isState());
     }
 
     @Override
@@ -99,7 +119,7 @@ public class Task {
                 ", dueDate=" + dueDate +
                 ", timeFrame=" + timeFrame +
                 ", priority=" + priority +
-                ", done=" + done +
+                ", done=" + state +
                 '}';
     }
 }

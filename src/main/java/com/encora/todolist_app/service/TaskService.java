@@ -1,121 +1,121 @@
 package com.encora.todolist_app.service;
 
 import com.encora.todolist_app.models.Priority;
+import com.encora.todolist_app.models.StateTaskDTO;
 import com.encora.todolist_app.models.Task;
-import com.encora.todolist_app.utils.comparators.DueDateTaskComparator;
-import com.encora.todolist_app.utils.comparators.PriorityTaskComparator;
-import com.encora.todolist_app.utils.comparators.UrgentTaskComparator;
+import com.encora.todolist_app.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.Month;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class TaskService {
 
-    private final List<Task> taskList = new ArrayList<>();
-    private Duration avgTotalTime = Duration.ZERO;
-    private Duration avgTimeLowP = Duration.ZERO;
-    private Duration avgTimeMediumP = Duration.ZERO;
-    private Duration avgTimeHighP = Duration.ZERO;
-    //quick solution id
-    int id = 0;
+    private final TaskRepository taskRepository;
 
-    public TaskService() {
-        addTask(new Task(0,"Hacer comida", LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0), LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.MEDIUM,false));
-        addTask(new Task(0,"Hacer tarea",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 2, 0, 0, 0),Priority.HIGH,true));
-        addTask(new Task(0,"Hacer gym",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 3, 0, 0, 0),Priority.LOW,false));
-        addTask(new Task(0,"Hacer nada",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),Priority.LOW,false));
-        addTask(new Task(0,"gym",LocalDateTime.of(2025, Month.FEBRUARY, 1, 0, 0, 0),LocalDateTime.of(2025, Month.FEBRUARY, 9, 0, 0, 0),Priority.LOW,true));
+    @Autowired
+    public TaskService(TaskRepository taskRepository) {
+        this.taskRepository = taskRepository;
     }
 
-    public List<Task> getAllTasks(){
-        return taskList;
+    public Page<Task> getAllTasks(Boolean state, String priority, String text, Pageable pageable) {
+        return taskRepository.findAllByStateAndPriorityAndText(state, priority, text, pageable);
     }
 
-    public void sortTaskByDueDate(){
-        taskList.sort(new DueDateTaskComparator());
+    public Task addTask(Task task) {
+        return taskRepository.save(task);
     }
 
-    public void sortTaskByPriority(){
-        taskList.sort(new PriorityTaskComparator());
+    public Task updateTask(Integer id, Task task) {
+        if (taskRepository.findById(id).isPresent()) {
+            task.setId(id);
+            return taskRepository.replaceTask(id,task);
+        }
+        return null; // Considera lanzar una excepción si no se encuentra
     }
 
-    public void sortTaskByUrgency(){
-        taskList.sort(new UrgentTaskComparator());
+    public void deleteTask(Integer id) {
+        taskRepository.deleteById(id);
     }
 
-    public List<Task> filterTaskByStatus(boolean status){
-        return taskList.stream()
-                .filter(task -> task.isDone() == status)
-                .collect(Collectors.toList());
-    }
+    public Map<String, Duration> avgTimesAllTask() {
 
-    public List<Task> filterTaskByText(String text){
-        return taskList.stream()
-                .filter(task -> task.getText().contains(text))
-                .collect(Collectors.toList());
-    }
+        List<Task> allTasks = taskRepository.getAllTask();
+        if(allTasks.isEmpty()){
+            return null;
+        }
 
-    public List<Task> filterTaskByPriority(Priority priority){
-        return taskList.stream()
-                .filter(task -> task.getPriority().equals(priority))
-                .collect(Collectors.toList());
-    }
-
-    public Task addTask(Task task){
-        task.setId(id++);
-        task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDueDate()));
-        taskList.add(task);
-        return task;
-        // # check what return if something go wrong
-    }
-
-    public  Task updateTask(int id,Task task){
-        return taskList.set(id,task);
-    }
-
-    public Task updateStatusDoneTask(int id){
-        Task task = taskList.get(id);
-        task.setDone(true);
-        return task;
-    }
-    public Task updateStatusUndoneTask(int id){
-        Task task = taskList.get(id);
-        task.setDone(false);
-        return task;
-    }
-
-    public void deleteTask(int id){
-        taskList.remove(id);
-    }
-
-    public Map<String,Duration> avgTimesAllTask(){
         Map<String,Duration> mapAvgTimes = new HashMap<>();
+        Duration avgTotalTime = Duration.ZERO;
+        Duration avgTimeLowP = Duration.ZERO;
+        Duration avgTimeMediumP = Duration.ZERO;
+        Duration avgTimeHighP = Duration.ZERO;
 
-        for (Task task:taskList){
+        int totalTask= 0;
+        int amountLowTask = 0;
+        int amountMediumTask = 0;
+        int amountHighTask=0;
 
-            avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
-            if(task.getPriority() == Priority.LOW){
-                avgTimeLowP = avgTimeLowP.plus(task.getTimeFrame());
-            } else if (task.getPriority() == Priority.MEDIUM) {
-                avgTimeMediumP = avgTimeMediumP.plus(task.getTimeFrame());
-            }else{
-               avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
+        for (Task task:allTasks) {
+            if (task.isState()){
+                totalTask++;
+                avgTotalTime = avgTotalTime.plus(task.getTimeFrame());
+                if(task.getPriority() == Priority.LOW){
+                    avgTimeLowP = avgTimeLowP.plus(task.getTimeFrame());
+                    amountLowTask++;
+                } else if (task.getPriority() == Priority.MEDIUM) {
+                    avgTimeMediumP = avgTimeMediumP.plus(task.getTimeFrame());
+                    amountMediumTask++;
+                }else{
+                    avgTimeHighP = avgTimeHighP.plus(task.getTimeFrame());
+                    amountHighTask++;
+                }
             }
         }
-        mapAvgTimes.put("AvgTotalTime",avgTotalTime);
-        mapAvgTimes.put("avgTimeLowPriority",avgTimeLowP);
-        mapAvgTimes.put("avgTimeMediumPriority",avgTimeMediumP);
-        mapAvgTimes.put("avgTimeHighPriority",avgTimeHighP);
+
+        if(totalTask == 0){
+            return null;
+        }
+
+        mapAvgTimes.put("AvgTotalTime", avgTotalTime.dividedBy(totalTask));
+        mapAvgTimes.put("avgTimeLowPriority",amountLowTask != 0 ? avgTimeLowP.dividedBy(amountLowTask): Duration.ZERO);
+        mapAvgTimes.put("avgTimeMediumPriority",amountMediumTask != 0? avgTimeMediumP.dividedBy(amountMediumTask): Duration.ZERO);
+        mapAvgTimes.put("avgTimeHighPriority",amountHighTask != 0? avgTimeHighP.dividedBy(amountHighTask): Duration.ZERO);
 
         return mapAvgTimes;
     }
 
+    public StateTaskDTO updateStatusDoneTask(int id) {
+        Optional<Task> taskOptional = taskRepository.findById(id);
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setState(true);
+            task.setDoneDate(LocalDateTime.now());
+            task.setTimeFrame(Duration.between(task.getCreationDate(),task.getDoneDate()));
+            taskRepository.replaceTask(id,task);
+            return new StateTaskDTO(task.getId(), task.isState());
+        }
+        return null; // Considera lanzar una excepción si no se encuentra
+    }
 
-
-
+    public StateTaskDTO updateStatusUndoneTask(int id) {
+        Optional<Task> taskOptional = taskRepository.findById(id);
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            task.setState(false);
+            task.setDoneDate(null);
+            task.setTimeFrame(null);
+            taskRepository.replaceTask(id,task);
+            return new StateTaskDTO(task.getId(), task.isState());
+        }
+        return null; // Considera lanzar una excepción si no se encuentra
+    }
 }
